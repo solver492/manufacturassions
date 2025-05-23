@@ -14,6 +14,7 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUser(id: number, user: User): Promise<User>;
   validateUserCredentials(username: string, password: string): Promise<User | null>;
 
   // Site methods
@@ -262,6 +263,11 @@ export class MemStorage implements IStorage {
     
     const isValid = await bcrypt.compare(password, user.password);
     return isValid ? user : null;
+  }
+
+  async updateUser(id: number, updatedUser: User): Promise<User> {
+    this.users.set(id, updatedUser);
+    return updatedUser;
   }
 
   // Site Methods

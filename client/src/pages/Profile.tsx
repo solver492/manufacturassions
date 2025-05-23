@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -12,7 +13,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -34,7 +34,7 @@ const profileSchema = z.object({
   username: z.string().min(3, "Le nom d'utilisateur doit comporter au moins 3 caractères"),
   email: z.string().email("Email invalide"),
   currentPassword: z.string().optional(),
-  newPassword: z.string().optional(),
+  newPassword: z.string().min(6, "Le nouveau mot de passe doit contenir au moins 6 caractères").optional(),
   confirmPassword: z.string().optional(),
 }).refine(data => {
   if (data.newPassword && !data.currentPassword) {
@@ -74,14 +74,10 @@ const Profile = () => {
 
   const updateProfileMutation = useMutation({
     mutationFn: async (data: ProfileFormValues) => {
-      if (data.newPassword && data.newPassword.length < 6) {
-        throw new Error("Le nouveau mot de passe doit contenir au moins 6 caractères");
-      }
-      
       const cleanData = {
         username: data.username,
         email: data.email,
-        ...(data.currentPassword ? {
+        ...(data.currentPassword && data.newPassword ? {
           currentPassword: data.currentPassword,
           newPassword: data.newPassword
         } : {})
@@ -95,8 +91,6 @@ const Profile = () => {
       return res.json();
     },
     onSuccess: (data) => {
-      // Nous allons simplement mettre à jour le cache local
-      // Sans appeler updateUser qui crée des problèmes
       queryClient.invalidateQueries({ queryKey: ["/api/auth/profile"] });
       toast({
         title: "Succès",
@@ -112,15 +106,9 @@ const Profile = () => {
       });
     },
     onError: (error: any) => {
-      let errorMessage = "Impossible de mettre à jour le profil";
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error instanceof Error) {
-        errorMessage = error.message;
-      }
       toast({
         title: "Erreur",
-        description: errorMessage,
+        description: error instanceof Error ? error.message : "Erreur lors de la mise à jour du profil",
         variant: "destructive",
       });
     },
@@ -153,7 +141,7 @@ const Profile = () => {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-4">
-            <Avatar className="h-16 w-16 bg-primary">
+            <Avatar className="h-16 w-16">
               <AvatarFallback className="text-xl">{user?.username?.charAt(0).toUpperCase()}</AvatarFallback>
             </Avatar>
             <div>
