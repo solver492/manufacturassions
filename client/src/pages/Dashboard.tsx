@@ -66,23 +66,23 @@ const Dashboard = () => {
     }
   };
 
+  const token = localStorage.getItem('auth_token');
   const { data: kpis, isLoading: isLoadingKpis } = useQuery<DashboardKPI>({
     queryKey: ["dashboard-kpis", isDemoMode],
-    enabled: !!localStorage.getItem('token'),
+    enabled: !!token,
     queryFn: async () => {
-      const token = localStorage.getItem('token');
-      if (!token) throw new Error('Non authentifié');
-      
       const response = await fetch(`/api/dashboard/kpis?demo=${isDemoMode}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-      if (response.status === 403) {
-        localStorage.removeItem('token');
-        throw new Error('Session expirée');
+      if (!response.ok) {
+        if (response.status === 403) {
+          localStorage.removeItem('auth_token');
+          throw new Error('Session expirée');
+        }
+        throw new Error('Erreur de chargement des KPIs');
       }
-      if (!response.ok) throw new Error('Erreur de chargement des KPIs');
       return response.json();
     },
     retry: false
@@ -90,14 +90,20 @@ const Dashboard = () => {
 
   const { data: charts, isLoading: isLoadingCharts } = useQuery<ChartData>({
     queryKey: ["dashboard-charts", isDemoMode],
+    enabled: !!token,
     queryFn: async () => {
-      const token = localStorage.getItem('token');
       const response = await fetch(`/api/dashboard/charts?demo=${isDemoMode}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-      if (!response.ok) throw new Error('Erreur de chargement des graphiques');
+      if (!response.ok) {
+        if (response.status === 403) {
+          localStorage.removeItem('auth_token');
+          throw new Error('Session expirée');
+        }
+        throw new Error('Erreur de chargement des graphiques');
+      }
       return response.json();
     }
   });
