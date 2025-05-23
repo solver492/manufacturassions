@@ -765,22 +765,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/dashboard/alerts", async (req, res) => {
+  app.get("/api/dashboard/alerts", authenticateToken, async (req, res) => {
     try {
-      const authHeader = req.headers['authorization'];
-      const token = authHeader && authHeader.split(' ')[1];
-
-      if (!token) {
-        return res.status(401).json({ message: "Token manquant" });
-      }
-
-      jwt.verify(token, JWT_SECRET, async (err: any) => {
-        if (err) {
-          return res.status(403).json({ message: "Token invalide ou expiré" });
-        }
-        const alerts = await storage.getDashboardAlerts();
-        res.json(alerts);
-      });
+      const alerts = await storage.getDashboardAlerts();
+      res.json(alerts);
     } catch (error) {
       console.error("Dashboard alerts fetch error:", error);
       res.status(500).json({ message: "Erreur lors de la récupération des alertes du tableau de bord" });
@@ -850,22 +838,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/dashboard/planning-jour", async (req, res) => {
+  app.get("/api/dashboard/planning-jour", authenticateToken, async (req, res) => {
     try {
-      const authHeader = req.headers['authorization'];
-      const token = authHeader && authHeader.split(' ')[1];
-
-      if (!token) {
-        return res.status(401).json({ message: "Token manquant" });
-      }
-
-      jwt.verify(token, JWT_SECRET, async (err: any) => {
-        if (err) {
-          return res.status(403).json({ message: "Token invalide ou expiré" });
-        }
-        const planning = await storage.getPlanningDuJour();
-        res.json(planning);
-      });
+      const planning = await storage.getPlanningDuJour();
+      res.json(planning);
     } catch (error) {
       console.error("Daily planning fetch error:", error);
       res.status(500).json({ message: "Erreur lors de la récupération du planning du jour" });
