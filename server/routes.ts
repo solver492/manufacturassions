@@ -642,14 +642,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const factureId = parseInt(req.params.id);
       const facture = await storage.getFacture(factureId);
-
       if (!facture) {
         return res.status(404).json({ message: "Facture non trouvée" });
       }
 
-      // In a real implementation, this would generate a PDF
-      // For this example, we just return a success message
-      res.json({ message: "Génération PDF non implémentée dans cette version" });
+      const prestation = await storage.getPrestation(facture.prestationId);
+      if (!prestation) {
+        return res.status(404).json({ message: "Prestation non trouvée" });
+      }
+
+      const site = await storage.getSite(prestation.siteId);
+      if (!site) {
+        return res.status(404).json({ message: "Site non trouvé" });
+      }
+
+      const PDFDocument = require('pdfkit');
+      const doc = new PDFDocument();
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename=facture-${facture.numeroFacture}.pdf`);
+
+      doc.pipe(res);
+
+      // En-tête
+      doc.fontSize(20).text('FACTURE', { align: 'center' });
+      doc.moveDown();
+
+      // Informations facture
+      doc.fontSize(12);
+      doc.text(`Numéro de facture: ${facture.numeroFacture}`);
+      doc.text(`Date d'émission: ${facture.dateEmission}`);
+      doc.text(`Date d'échéance: ${facture.dateEcheance}`);
+      doc.moveDown();
+
+      // Informations client
+      doc.fontSize(14).text('Client:', { underline: true });
+      doc.fontSize(12);
+      doc.text(site.nomSite);
+      doc.text(site.adresse);
+      doc.text(`${site.ville}`);
+      doc.text(`Contact: ${site.contactNom}`);
+      doc.moveDown();
+
+      // Détails prestation
+      doc.fontSize(14).text('Détails de la prestation:', { underline: true });
+      doc.fontSize(12);
+      doc.text(`Date: ${prestation.datePrestation}`);
+      doc.text(`Horaires: ${prestation.heureDebut} - ${prestation.heureFin}`);
+      doc.text(`Nombre de manutentionnaires: ${prestation.nbManutentionnaires}`);
+      doc.text(`Nombre de camions: ${prestation.nbCamions}`);
+      doc.moveDown();
+
+      // Montants
+      doc.fontSize(14).text('Montants:', { underline: true });
+      doc.fontSize(12);
+      doc.text(`Montant HT: ${facture.montantHt} €`);
+      doc.text(`TVA: ${facture.tva} €`);
+      doc.fontSize(14).text(`Montant TTC: ${facture.montantTtc} €`, { bold: true });
+
+      doc.end();
     } catch (error) {
       console.error("Facture PDF generation error:", error);
       res.status(500).json({ message: "Erreur lors de la génération du PDF de la facture" });
