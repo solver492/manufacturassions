@@ -24,7 +24,7 @@ const Dashboard = () => {
   const handleExport = async () => {
     try {
       setIsExporting(true);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const response = await fetch(`/api/dashboard/export?demo=${isDemoMode}`, {
         method: 'GET',
         headers: {
@@ -34,7 +34,6 @@ const Dashboard = () => {
 
       if (!response.ok) {
         if (response.status === 403) {
-          localStorage.removeItem('token');
           throw new Error('Session expirée');
         }
         throw new Error('Erreur lors de l\'export');
