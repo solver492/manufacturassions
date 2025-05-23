@@ -116,6 +116,19 @@ const Reports = () => {
     }
   });
 
+  const { data: factures } = useQuery({
+    queryKey: ['factures'],
+    queryFn: async () => {
+      const response = await fetch('/api/factures', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        }
+      });
+      if (!response.ok) throw new Error('Failed to fetch factures');
+      return response.json();
+    }
+  });
+
   // Handle export click
   const handleExport = async () => {
     try {
@@ -161,6 +174,23 @@ const Reports = () => {
   if (isLoadingKpis || isLoadingCharts) {
     return <div>Chargement...</div>;
   }
+
+  // Calcul du CA par mois à partir des factures
+  const caEvolutionData = factures?.reduce((acc: any[], facture: any) => {
+    const month = new Date(facture.dateEmission).getMonth();
+    acc[month] = (acc[month] || 0) + (facture.montantTtc || 0);
+    return acc;
+  }, Array(12).fill(0)).map((value, index) => ({
+    name: new Date(2024, index).toLocaleString('fr-FR', { month: 'short' }),
+    value
+  })) || [];
+
+  // Calcul de la répartition des sites par type
+  const repartitionData = sites?.reduce((acc: any, site: any) => {
+    const type = site.type || 'Autres';
+    acc[type] = (acc[type] || 0) + 1;
+    return acc;
+  }, {}) || {};
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -240,10 +270,7 @@ const Reports = () => {
                       <div className="h-[400px]">
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart 
-                            data={charts?.caEvolution?.data?.map((value: number, index: number) => ({
-                              name: charts?.caEvolution?.labels?.[index] || '',
-                              value: value || 0
-                            })) || []} 
+                            data={caEvolutionData} 
                             margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                           >
                             <CartesianGrid strokeDasharray="3 3" />
@@ -270,9 +297,9 @@ const Reports = () => {
                           <ResponsiveContainer width="100%" height="100%">
                             <RechartsPieChart>
                               <Pie
-                                data={charts?.repartitionSites?.data.map((value: number, index: number) => ({
-                                  name: charts.repartitionSites.labels[index],
-                                  value
+                                data={Object.entries(repartitionData).map(([name, value]) => ({
+                                  name,
+                                  value: value as number,
                                 }))}
                                 cx="50%"
                                 cy="50%"
@@ -281,7 +308,7 @@ const Reports = () => {
                                 dataKey="value"
                                 label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                               >
-                                {charts?.repartitionSites?.data.map((_: any, index: number) => (
+                                {[0, 1, 2, 3, 4].map((entry, index) => (
                                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                 ))}
                               </Pie>
