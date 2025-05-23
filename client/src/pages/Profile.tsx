@@ -102,10 +102,16 @@ const Profile = () => {
         confirmPassword: "",
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      let errorMessage = "Impossible de mettre à jour le profil";
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
       toast({
         title: "Erreur",
-        description: error instanceof Error ? error.message : "Impossible de mettre à jour le profil",
+        description: errorMessage,
         variant: "destructive",
       });
     },

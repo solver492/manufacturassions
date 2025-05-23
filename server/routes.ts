@@ -43,6 +43,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!username || !password) {
         return res.status(400).json({ message: "Nom d'utilisateur et mot de passe requis" });
       }
+
+      // Vérifier le format du mot de passe
+      if (password.length < 6) {
+        return res.status(400).json({ message: "Le mot de passe doit contenir au moins 6 caractères" });
+      }
       
       const user = await storage.validateUserCredentials(username, password);
       
