@@ -659,13 +659,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const PDFDocument = require('pdfkit');
       const doc = new PDFDocument({
         size: 'A4',
-        margin: 50
+        margin: 50,
+        bufferPages: true
       });
 
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename=facture-${facture.numeroFacture}.pdf`);
-
-      doc.pipe(res);
+      // Create buffer to store PDF
+      let buffers = [];
+      doc.on('data', buffers.push.bind(buffers));
+      doc.on('end', () => {
+        let pdfData = Buffer.concat(buffers);
+        res.writeHead(200, {
+          'Content-Length': Buffer.byteLength(pdfData),
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `attachment; filename=facture-${facture.numeroFacture}.pdf`
+        });
+        res.end(pdfData);
+      });
 
       // Logo et en-tête
       doc.fontSize(24).text('Mon Auxiliaire', { align: 'center' });

@@ -236,11 +236,33 @@ const Billing = () => {
   };
 
   // Handle download PDF
-  const handleDownloadPdf = (factureId: number) => {
-    toast({
-      title: "Information",
-      description: "La génération de PDF sera disponible dans la prochaine version",
-    });
+  const handleDownloadPdf = async (factureId: number) => {
+    try {
+      const response = await fetch(`/api/factures/${factureId}/pdf`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors du téléchargement');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `facture-${factureId}.pdf`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('PDF download error:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de télécharger le PDF. Veuillez réessayer.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Handle sending email
