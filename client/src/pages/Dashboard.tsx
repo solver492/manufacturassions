@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -5,24 +6,15 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Calendar as CalendarIcon,
-  BarChart4,
-  Euro,
-  Users,
-  TrendingUp,
-  ArrowUpRight,
-  FilterX,
-  Download,
-} from "lucide-react";
+import { CalendarIcon, BarChart4, Euro, Users, TrendingUp, ArrowUpRight, FilterX, Download } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import StatCard from "@/components/dashboard/StatCard";
 import ChartContainer from "@/components/dashboard/ChartContainer";
 import AlertItem from "@/components/dashboard/AlertItem";
 import { formatCurrency } from "@/lib/utils/formatUtils";
 import { DashboardKPI, ChartData, Alert, PlanningItem } from "@/lib/types";
-import { Switch } from "@/components/ui/switch"
-import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 const Dashboard = () => {
   const { toast } = useToast();
@@ -64,11 +56,11 @@ const Dashboard = () => {
         title: "Succès",
         description: "Le rapport a été exporté avec succès",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Export error:', error);
       toast({
         title: "Erreur",
-        description: "Impossible d'exporter le rapport",
+        description: error.message || "Impossible d'exporter le rapport",
         variant: "destructive",
       });
     } finally {
@@ -76,65 +68,68 @@ const Dashboard = () => {
     }
   };
 
-  // Fetch dashboard KPIs
   const { data: kpis, isLoading: isLoadingKpis } = useQuery<DashboardKPI>({
-    queryKey: ["/api/dashboard/kpis", isDemoMode],
-    queryFn: () => fetch(`/api/dashboard/kpis?demo=${isDemoMode}`).then(res => res.json()),
-    onError: (error) => {
-      toast({
-        title: "Erreur",
-        description: "Impossible de charger les KPIs du tableau de bord",
-        variant: "destructive",
+    queryKey: ["dashboard-kpis", isDemoMode],
+    queryFn: async () => {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/dashboard/kpis?demo=${isDemoMode}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
-    },
+      if (!response.ok) throw new Error('Erreur de chargement des KPIs');
+      return response.json();
+    }
   });
 
-  // Fetch chart data
   const { data: charts, isLoading: isLoadingCharts } = useQuery<ChartData>({
-    queryKey: ["/api/dashboard/charts", isDemoMode],
-    queryFn: () => fetch(`/api/dashboard/charts?demo=${isDemoMode}`).then(res => res.json()),
-    onError: (error) => {
-      toast({
-        title: "Erreur",
-        description: "Impossible de charger les données des graphiques",
-        variant: "destructive",
+    queryKey: ["dashboard-charts", isDemoMode],
+    queryFn: async () => {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/dashboard/charts?demo=${isDemoMode}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
-    },
+      if (!response.ok) throw new Error('Erreur de chargement des graphiques');
+      return response.json();
+    }
   });
 
-  // Fetch alerts
   const { data: alerts, isLoading: isLoadingAlerts } = useQuery<Alert[]>({
-    queryKey: ["/api/dashboard/alerts", isDemoMode],
-    queryFn: () => fetch(`/api/dashboard/alerts?demo=${isDemoMode}`).then(res => res.json()),
-    onError: (error) => {
-      toast({
-        title: "Erreur",
-        description: "Impossible de charger les alertes",
-        variant: "destructive",
+    queryKey: ["dashboard-alerts", isDemoMode],
+    queryFn: async () => {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/dashboard/alerts?demo=${isDemoMode}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
-    },
+      if (!response.ok) throw new Error('Erreur de chargement des alertes');
+      return response.json();
+    }
   });
 
-  // Fetch planning du jour
   const { data: planningDuJour, isLoading: isLoadingPlanning } = useQuery<PlanningItem[]>({
-    queryKey: ["/api/dashboard/planning-jour", isDemoMode],
-    queryFn: () => fetch(`/api/dashboard/planning-jour?demo=${isDemoMode}`).then(res => res.json()),
-    onError: (error) => {
-      toast({
-        title: "Erreur",
-        description: "Impossible de charger le planning du jour",
-        variant: "destructive",
+    queryKey: ["dashboard-planning", isDemoMode],
+    queryFn: async () => {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/dashboard/planning-jour?demo=${isDemoMode}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
       });
-    },
+      if (!response.ok) throw new Error('Erreur de chargement du planning');
+      return response.json();
+    }
   });
 
-  // Transform chart data for recharts components
-  const caEvolutionData = charts?.caEvolution.labels.map((label, index) => ({
+  const caEvolutionData = charts?.caEvolution?.labels.map((label, index) => ({
     name: label,
     value: charts.caEvolution.data[index],
   })) || [];
 
-  const repartitionData = charts?.repartitionSites.labels.map((label, index) => ({
+  const repartitionData = charts?.repartitionSites?.labels.map((label, index) => ({
     name: label,
     value: charts.repartitionSites.data[index],
   })) || [];
@@ -176,26 +171,23 @@ const Dashboard = () => {
               variant="secondary" 
               className="flex items-center gap-2" 
               onClick={handleExport}
-              disabled={isLoadingKpis || isLoadingCharts}
+              disabled={isExporting || isLoadingKpis || isLoadingCharts}
             >
               <Download className="h-4 w-4" />
-              Exporter
+              {isExporting ? 'Export...' : 'Exporter'}
             </Button>
           </div>
         </div>
 
-        {/* KPI Cards */}
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {isLoadingKpis ? (
-            Array(4)
-              .fill(0)
-              .map((_, index) => (
-                <Card key={index}>
-                  <CardContent className="p-5">
-                    <Skeleton className="h-24 w-full" />
-                  </CardContent>
-                </Card>
-              ))
+            Array(4).fill(0).map((_, index) => (
+              <Card key={index}>
+                <CardContent className="p-5">
+                  <Skeleton className="h-24 w-full" />
+                </CardContent>
+              </Card>
+            ))
           ) : (
             <>
               <StatCard
@@ -230,21 +222,18 @@ const Dashboard = () => {
           )}
         </div>
 
-        {/* Charts */}
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
           {isLoadingCharts ? (
-            Array(2)
-              .fill(0)
-              .map((_, index) => (
-                <Card key={index}>
-                  <div className="p-5 border-b border-slate-200">
-                    <Skeleton className="h-6 w-48" />
-                  </div>
-                  <CardContent className="p-5">
-                    <Skeleton className="h-80 w-full" />
-                  </CardContent>
-                </Card>
-              ))
+            Array(2).fill(0).map((_, index) => (
+              <Card key={index}>
+                <div className="p-5 border-b border-slate-200">
+                  <Skeleton className="h-6 w-48" />
+                </div>
+                <CardContent className="p-5">
+                  <Skeleton className="h-80 w-full" />
+                </CardContent>
+              </Card>
+            ))
           ) : (
             <>
               <ChartContainer
@@ -265,16 +254,14 @@ const Dashboard = () => {
                       <span
                         className="h-3 w-3 rounded-full mr-2"
                         style={{
-                          backgroundColor:
-                            index === 0
-                              ? "#2563eb"
-                              : index === 1
-                              ? "#4f46e5"
-                              : index === 2
-                              ? "#22c55e"
-                              : "#ec4899",
+                          backgroundColor: [
+                            "#2563eb",
+                            "#4f46e5",
+                            "#22c55e",
+                            "#ec4899",
+                          ][index % 4],
                         }}
-                      ></span>
+                      />
                       <span className="text-sm text-slate-600">
                         {item.name} ({item.value}%)
                       </span>
@@ -286,24 +273,20 @@ const Dashboard = () => {
           )}
         </div>
 
-        {/* Info Rows */}
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-          {/* Planning du jour */}
           <div className="col-span-2 bg-white rounded-lg shadow">
             <div className="p-5 border-b border-slate-200 flex justify-between items-center">
               <h3 className="text-lg leading-6 font-medium text-slate-900">Planning du jour</h3>
-              <Link href="/calendar">
-                <a className="text-sm text-primary hover:text-primary-dark">Voir calendrier complet</a>
-              </Link>
+              <Button variant="link" asChild>
+                <Link href="/calendar">Voir calendrier complet</Link>
+              </Button>
             </div>
             <div className="p-5 overflow-hidden">
               {isLoadingPlanning ? (
                 <div className="space-y-4">
-                  {Array(4)
-                    .fill(0)
-                    .map((_, index) => (
-                      <Skeleton key={index} className="h-16 w-full" />
-                    ))}
+                  {Array(4).fill(0).map((_, index) => (
+                    <Skeleton key={index} className="h-16 w-full" />
+                  ))}
                 </div>
               ) : planningDuJour && planningDuJour.length > 0 ? (
                 <ul className="divide-y divide-slate-200">
@@ -340,19 +323,18 @@ const Dashboard = () => {
                   <h3 className="mt-2 text-sm font-medium text-slate-900">Aucune prestation aujourd'hui</h3>
                   <p className="mt-1 text-sm text-slate-500">Planifiez une nouvelle prestation pour aujourd'hui.</p>
                   <div className="mt-6">
-                    <Link href="/prestations">
-                      <Button>
+                    <Button asChild>
+                      <Link href="/prestations">
                         <ArrowUpRight className="mr-2 h-4 w-4" />
                         Nouvelle prestation
-                      </Button>
-                    </Link>
+                      </Link>
+                    </Button>
                   </div>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Alertes */}
           <div className="bg-white rounded-lg shadow">
             <div className="p-5 border-b border-slate-200">
               <h3 className="text-lg leading-6 font-medium text-slate-900">Alertes</h3>
@@ -360,11 +342,9 @@ const Dashboard = () => {
             <div className="p-5">
               {isLoadingAlerts ? (
                 <div className="space-y-4">
-                  {Array(4)
-                    .fill(0)
-                    .map((_, index) => (
-                      <Skeleton key={index} className="h-16 w-full" />
-                    ))}
+                  {Array(4).fill(0).map((_, index) => (
+                    <Skeleton key={index} className="h-16 w-full" />
+                  ))}
                 </div>
               ) : alerts && alerts.length > 0 ? (
                 <ul className="divide-y divide-slate-200">
