@@ -638,8 +638,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/factures/:id/pdf", authenticateToken, async (req, res) => {
+  app.get("/api/factures/:id/pdf", async (req, res) => {
     try {
+      const authHeader = req.headers['authorization'];
+      const token = authHeader && authHeader.split(' ')[1];
+
+      if (!token) {
+        return res.status(401).json({ message: "Authentification requise" });
+      }
+
       const factureId = parseInt(req.params.id);
       const facture = await storage.getFacture(factureId);
       if (!facture) {

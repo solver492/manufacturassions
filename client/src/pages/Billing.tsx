@@ -240,7 +240,7 @@ const Billing = () => {
     try {
       const response = await fetch(`/api/factures/${factureId}/pdf`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
         }
       });
 
