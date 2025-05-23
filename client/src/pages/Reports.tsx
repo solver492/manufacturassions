@@ -240,10 +240,10 @@ const Reports = () => {
                       <div className="h-[400px]">
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart 
-                            data={charts?.caEvolution?.data.map((value: number, index: number) => ({
-                              name: charts.caEvolution.labels[index],
-                              value
-                            }))} 
+                            data={charts?.caEvolution?.data?.map((value: number, index: number) => ({
+                              name: charts?.caEvolution?.labels?.[index] || '',
+                              value: value || 0
+                            })) || []} 
                             margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
                           >
                             <CartesianGrid strokeDasharray="3 3" />
