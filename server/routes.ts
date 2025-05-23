@@ -767,6 +767,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/dashboard/alerts", authenticateToken, async (req, res) => {
     try {
+      const token = req.headers.authorization?.split(' ')[1];
+      if (!token) {
+        return res.status(403).json({ message: "Token manquant" });
+      }
       const alerts = await storage.getDashboardAlerts();
       res.json(alerts);
     } catch (error) {
@@ -840,6 +844,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/dashboard/planning-jour", authenticateToken, async (req, res) => {
     try {
+      const token = req.headers.authorization?.split(' ')[1];
+      if (!token) {
+        return res.status(403).json({ message: "Token manquant" });
+      }
       const planning = await storage.getPlanningDuJour();
       res.json(planning);
     } catch (error) {
