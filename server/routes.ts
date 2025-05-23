@@ -610,16 +610,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Prestation non trouvée" });
       }
 
-      // Synchroniser les statuts
-      const { newStatutPrestation, newStatutPaiement } = syncStatutPrestationPaiement(
-        prestation.statutPrestation,
-        statut
-      );
-
-      // Mise à jour de la prestation
+      // Synchroniser les statuts et mettre à jour la prestation
+      const statuts = syncStatutPrestationPaiement("termine", statut);
       await storage.updatePrestation(updatedFacture.prestationId, {
-        statutPrestation: newStatutPrestation,
-        statutPaiement: newStatutPaiement
+        statutPrestation: statuts.newStatutPrestation,
+        statutPaiement: statuts.newStatutPaiement
       });
 
       // Mise à jour de la facture
