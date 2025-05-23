@@ -21,10 +21,13 @@ import ChartContainer from "@/components/dashboard/ChartContainer";
 import AlertItem from "@/components/dashboard/AlertItem";
 import { formatCurrency } from "@/lib/utils/formatUtils";
 import { DashboardKPI, ChartData, Alert, PlanningItem } from "@/lib/types";
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
 
 const Dashboard = () => {
   const { toast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
+  const [isDemoMode, setIsDemoMode] = useState(true);
 
   const handleExport = async () => {
     try {
@@ -33,8 +36,8 @@ const Dashboard = () => {
       if (!token) {
         throw new Error('Non authentifié');
       }
-      
-      const response = await fetch('/api/dashboard/export', {
+
+      const response = await fetch(`/api/dashboard/export?demo=${isDemoMode}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -44,7 +47,7 @@ const Dashboard = () => {
       if (response.status === 403) {
         throw new Error('Session expirée. Veuillez vous reconnecter.');
       }
-      
+
       if (!response.ok) {
         throw new Error('Erreur lors de l\'export');
       }
@@ -75,7 +78,8 @@ const Dashboard = () => {
 
   // Fetch dashboard KPIs
   const { data: kpis, isLoading: isLoadingKpis } = useQuery<DashboardKPI>({
-    queryKey: ["/api/dashboard/kpis"],
+    queryKey: ["/api/dashboard/kpis", isDemoMode],
+    queryFn: () => fetch(`/api/dashboard/kpis?demo=${isDemoMode}`).then(res => res.json()),
     onError: (error) => {
       toast({
         title: "Erreur",
@@ -87,7 +91,8 @@ const Dashboard = () => {
 
   // Fetch chart data
   const { data: charts, isLoading: isLoadingCharts } = useQuery<ChartData>({
-    queryKey: ["/api/dashboard/charts"],
+    queryKey: ["/api/dashboard/charts", isDemoMode],
+    queryFn: () => fetch(`/api/dashboard/charts?demo=${isDemoMode}`).then(res => res.json()),
     onError: (error) => {
       toast({
         title: "Erreur",
@@ -99,7 +104,8 @@ const Dashboard = () => {
 
   // Fetch alerts
   const { data: alerts, isLoading: isLoadingAlerts } = useQuery<Alert[]>({
-    queryKey: ["/api/dashboard/alerts"],
+    queryKey: ["/api/dashboard/alerts", isDemoMode],
+    queryFn: () => fetch(`/api/dashboard/alerts?demo=${isDemoMode}`).then(res => res.json()),
     onError: (error) => {
       toast({
         title: "Erreur",
@@ -111,7 +117,8 @@ const Dashboard = () => {
 
   // Fetch planning du jour
   const { data: planningDuJour, isLoading: isLoadingPlanning } = useQuery<PlanningItem[]>({
-    queryKey: ["/api/dashboard/planning-jour"],
+    queryKey: ["/api/dashboard/planning-jour", isDemoMode],
+    queryFn: () => fetch(`/api/dashboard/planning-jour?demo=${isDemoMode}`).then(res => res.json()),
     onError: (error) => {
       toast({
         title: "Erreur",
@@ -151,10 +158,20 @@ const Dashboard = () => {
                 </SelectContent>
               </Select>
             </div>
-            <Button variant="default" className="flex items-center gap-2">
-              <FilterX className="h-4 w-4" />
-              Filtrer
-            </Button>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="demo-mode"
+                  checked={isDemoMode}
+                  onCheckedChange={setIsDemoMode}
+                />
+                <Label htmlFor="demo-mode">Mode démo</Label>
+              </div>
+              <Button variant="secondary" className="flex items-center gap-2">
+                <FilterX className="h-4 w-4" />
+                Filtrer
+              </Button>
+            </div>
             <Button 
               variant="secondary" 
               className="flex items-center gap-2" 
