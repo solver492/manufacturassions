@@ -588,9 +588,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Facture non trouvée" });
       }
 
-      // Mettre à jour la prestation avec le nouveau statut de paiement
+      // Récupérer la prestation
+      const prestation = await storage.getPrestation(updatedFacture.prestationId);
+      if (!prestation) {
+        return res.status(404).json({ message: "Prestation non trouvée" });
+      }
+
+      // Synchroniser les statuts en fonction du statut de la facture
+      let newStatutPrestation = prestation.statutPrestation;
+      let newStatutPaiement = statut;
+
+      if (statut === "brouillon") {
+        newStatutPrestation = "en_attente";
+        newStatutPaiement = "en_attente";
+      } else if (statut === "envoyee") {
+        newStatutPrestation = "en_cours";
+        newStatutPaiement = "en_attente";
+      } else if (statut === "payee") {
+        newStatutPrestation = "termine";
+        newStatutPaiement = "paye";
+      }
+
+      // Mettre à jour la prestation avec les nouveaux statuts
       await storage.updatePrestation(updatedFacture.prestationId, {
-        statutPaiement: statut
+        statutPrestation: newStatutPrestation,
+        statutPaiement: newStatutPaiement
       });
 
       // Mise à jour de la facture avec le nouveau statut
