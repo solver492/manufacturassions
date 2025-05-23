@@ -176,8 +176,26 @@ const Prestations = () => {
   };
 
   // Handle status update
-  const handleStatusUpdate = (prestation: Prestation, status: string) => {
-    updatePrestationStatusMutation.mutate({ id: prestation.id, status: status });
+  const handleStatusUpdate = async (prestation: Prestation, status: string) => {
+    try {
+      await apiRequest("PATCH", `/api/prestations/${prestation.id}`, {
+        statutPrestation: status,
+        statutPaiement: prestation.statutPaiement
+      });
+      
+      // Rafraîchir les données
+      queryClient.invalidateQueries({ queryKey: ["/api/prestations"] });
+      toast({
+        title: "Succès",
+        description: "Statut de la prestation mis à jour"
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de mettre à jour le statut",
+        variant: "destructive"
+      });
+    }
   };
 
   // Get site name by ID
