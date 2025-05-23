@@ -29,13 +29,22 @@ const Dashboard = () => {
   const handleExport = async () => {
     try {
       setIsExporting(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Non authentifié');
+      }
+      
       const response = await fetch('/api/dashboard/export', {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         }
       });
 
+      if (response.status === 403) {
+        throw new Error('Session expirée. Veuillez vous reconnecter.');
+      }
+      
       if (!response.ok) {
         throw new Error('Erreur lors de l\'export');
       }
