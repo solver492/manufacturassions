@@ -620,12 +620,18 @@ export class MemStorage implements IStorage {
       const site = this.sites.get(prestation.siteId);
       
       if (site) {
+        // Détermine le statut en fonction du paiement
+        let statut = prestation.statutPrestation;
+        if (prestation.statutPaiement === "paye") {
+          statut = "termine";
+        }
+
         planning.push({
           id: prestation.id,
           heure: prestation.heureDebut,
           client: site.nomSite,
           description: `${site.ville} • ${prestation.nbManutentionnaires} manutentionnaires • ${prestation.nbCamions} camion${prestation.nbCamions > 1 ? 's' : ''}`,
-          statut: prestation.statutPrestation
+          statut: statut
         });
       }
     }
