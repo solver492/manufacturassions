@@ -182,7 +182,7 @@ const Prestations = () => {
         statutPrestation: status,
         statutPaiement: prestation.statutPaiement
       });
-      
+
       // Rafraîchir les données
       queryClient.invalidateQueries({ queryKey: ["/api/prestations"] });
       toast({
@@ -362,7 +362,7 @@ const Prestations = () => {
                               size="icon"
                               onClick={() => handleStatusUpdate(prestation, "termine")}
                               className={prestation.statutPrestation === "termine" ? "text-green-500" : ""}
-                              disabled={prestation.statutPrestation === "termine"}
+                              disabled={prestation.statutPrestation === "termine" || prestation.statutPaiement === "paye"}
                             >
                               <CheckCircle className="h-4 w-4" />
                             </Button>
