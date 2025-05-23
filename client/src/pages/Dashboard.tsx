@@ -72,14 +72,21 @@ const Dashboard = () => {
     queryKey: ["dashboard-kpis", isDemoMode],
     queryFn: async () => {
       const token = localStorage.getItem('token');
+      if (!token) throw new Error('Non authentifié');
+      
       const response = await fetch(`/api/dashboard/kpis?demo=${isDemoMode}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
+      if (response.status === 403) {
+        localStorage.removeItem('token');
+        throw new Error('Session expirée');
+      }
       if (!response.ok) throw new Error('Erreur de chargement des KPIs');
       return response.json();
-    }
+    },
+    retry: false
   });
 
   const { data: charts, isLoading: isLoadingCharts } = useQuery<ChartData>({
@@ -124,9 +131,9 @@ const Dashboard = () => {
     }
   });
 
-  const caEvolutionData = charts?.caEvolution?.labels.map((label, index) => ({
+  const caEvolutionData = charts?.caEvolution?.labels?.map((label, index) => ({
     name: label,
-    value: charts.caEvolution.data[index],
+    value: charts?.caEvolution?.data?.[index] || 0,
   })) || [];
 
   const repartitionData = charts?.repartitionSites?.labels.map((label, index) => ({
