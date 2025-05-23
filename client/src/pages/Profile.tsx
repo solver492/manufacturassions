@@ -74,6 +74,10 @@ const Profile = () => {
 
   const updateProfileMutation = useMutation({
     mutationFn: async (data: ProfileFormValues) => {
+      if (data.newPassword && data.newPassword.length < 6) {
+        throw new Error("Le nouveau mot de passe doit contenir au moins 6 caractères");
+      }
+      
       const cleanData = {
         username: data.username,
         email: data.email,
@@ -82,7 +86,12 @@ const Profile = () => {
           newPassword: data.newPassword
         } : {})
       };
+      
       const res = await apiRequest("PATCH", "/api/auth/profile", cleanData);
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || "Erreur lors de la mise à jour du profil");
+      }
       return res.json();
     },
     onSuccess: (data) => {
