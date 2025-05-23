@@ -23,6 +23,45 @@ import { DashboardKPI, ChartData, Alert, PlanningItem } from "@/lib/types";
 
 const Dashboard = () => {
   const { toast } = useToast();
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = async () => {
+    try {
+      setIsExporting(true);
+      const response = await fetch('/api/dashboard/export', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de l\'export');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `dashboard-${new Date().toISOString().split('T')[0]}.pdf`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "Succès",
+        description: "Le rapport a été exporté avec succès",
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'exporter le rapport",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   // Fetch dashboard KPIs
   const { data: kpis, isLoading: isLoadingKpis } = useQuery<DashboardKPI>({
@@ -106,7 +145,12 @@ const Dashboard = () => {
               <FilterX className="h-4 w-4" />
               Filtrer
             </Button>
-            <Button variant="secondary" className="flex items-center gap-2">
+            <Button 
+              variant="secondary" 
+              className="flex items-center gap-2" 
+              onClick={handleExport}
+              disabled={isLoadingKpis || isLoadingCharts}
+            >
               <Download className="h-4 w-4" />
               Exporter
             </Button>

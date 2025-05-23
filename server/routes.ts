@@ -775,6 +775,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/dashboard/export", authenticateToken, async (req, res) => {
+    try {
+      const kpis = await storage.getDashboardKpis();
+      const charts = await storage.getDashboardCharts();
+      const alerts = await storage.getDashboardAlerts();
+
+      const PDFKit = await import('pdfkit');
+      const doc = new PDFKit.default({
+        size: 'A4',
+        margin: 50,
+        bufferPages: true
+      });
+
+      // Create buffer to store PDF
+      let buffers = [];
+      doc.on('data', buffers.push.bind(buffers));
+      doc.on('end', () => {
+        let pdfData = Buffer.concat(buffers);
+        res.writeHead(200, {
+          'Content-Length': Buffer.byteLength(pdfData),
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `attachment; filename=dashboard-${new Date().toISOString().split('T')[0]}.pdf`
+        });
+        res.end(pdfData);
+      });
+
+      // En-tête
+      doc.fontSize(24).text('Rapport Dashboard', { align: 'center' });
+      doc.moveDown();
+      doc.fontSize(12).text(`Généré le ${new Date().toLocaleDateString()}`, { align: 'center' });
+      doc.moveDown(2);
+
+      // KPIs
+      doc.fontSize(16).text('Indicateurs Clés de Performance', { underline: true });
+      doc.moveDown();
+      doc.fontSize(12).text(`CA Mensuel: ${kpis.caMensuel.toLocaleString()}€`);
+      doc.text(`Prestations du mois: ${kpis.prestationsMensuel}`);
+      doc.text(`Taux de paiement: ${kpis.tauxPaiement}%`);
+      doc.text(`Nouveaux clients: ${kpis.nouveauxClients}`);
+      doc.moveDown(2);
+
+      // Alertes
+      doc.fontSize(16).text('Alertes', { underline: true });
+      doc.moveDown();
+      alerts.forEach(alert => {
+        doc.fontSize(12).text(`${alert.message} - ${alert.description}`);
+      });
+
+      doc.moveDown(2);
+
+      // Pied de page
+      doc.fontSize(10).text('Mon Auxiliaire - Rapport confidentiel', {
+        align: 'center',
+        color: 'grey'
+      });
+
+      doc.end();
+    } catch (error) {
+      console.error("Dashboard export error:", error);
+      res.status(500).json({ message: "Erreur lors de l'export du tableau de bord" });
+    }
+  });
+
   app.get("/api/dashboard/planning-jour", authenticateToken, async (req, res) => {
     try {
       const planning = await storage.getPlanningDuJour();
