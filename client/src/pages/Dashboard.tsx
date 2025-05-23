@@ -25,10 +25,6 @@ const Dashboard = () => {
     try {
       setIsExporting(true);
       const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('Non authentifié');
-      }
-
       const response = await fetch(`/api/dashboard/export?demo=${isDemoMode}`, {
         method: 'GET',
         headers: {
@@ -36,11 +32,11 @@ const Dashboard = () => {
         }
       });
 
-      if (response.status === 403) {
-        throw new Error('Session expirée. Veuillez vous reconnecter.');
-      }
-
       if (!response.ok) {
+        if (response.status === 403) {
+          localStorage.removeItem('token');
+          throw new Error('Session expirée');
+        }
         throw new Error('Erreur lors de l\'export');
       }
 
@@ -49,7 +45,9 @@ const Dashboard = () => {
       const a = document.createElement('a');
       a.href = url;
       a.download = `dashboard-${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
 
       toast({
@@ -70,6 +68,7 @@ const Dashboard = () => {
 
   const { data: kpis, isLoading: isLoadingKpis } = useQuery<DashboardKPI>({
     queryKey: ["dashboard-kpis", isDemoMode],
+    enabled: !!localStorage.getItem('token'),
     queryFn: async () => {
       const token = localStorage.getItem('token');
       if (!token) throw new Error('Non authentifié');
