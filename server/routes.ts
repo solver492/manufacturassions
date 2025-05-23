@@ -663,8 +663,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Site non trouvé" });
       }
 
-      const PDFDocument = require('pdfkit');
-      const doc = new PDFDocument({
+      const PDFKit = await import('pdfkit');
+      const doc = new PDFKit.default({
         size: 'A4',
         margin: 50,
         bufferPages: true
