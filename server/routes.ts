@@ -614,6 +614,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Synchroniser le statut de la prestation
+      const { newStatutPrestation, newStatutPaiement } = syncStatutPrestationPaiement(
+        prestation.statutPrestation,
+        statut
+      );
+
+      await storage.updatePrestation(updatedFacture.prestationId, {
+        statutPrestation: newStatutPrestation,
+        statutPaiement: newStatutPaiement
+      });
+
       res.json(updatedFacture);
     } catch (error) {
       console.error("Facture payment update error:", error);
