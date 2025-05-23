@@ -657,7 +657,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const PDFDocument = require('pdfkit');
-      const doc = new PDFDocument();
+      const doc = new PDFDocument({
+        size: 'A4',
+        margin: 50
+      });
 
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', `attachment; filename=facture-${facture.numeroFacture}.pdf`);
