@@ -667,41 +667,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       doc.pipe(res);
 
-      // En-tête
+      // Logo et en-tête
+      doc.fontSize(24).text('Mon Auxiliaire', { align: 'center' });
+      doc.moveDown();
       doc.fontSize(20).text('FACTURE', { align: 'center' });
       doc.moveDown();
 
-      // Informations facture
-      doc.fontSize(12);
-      doc.text(`Numéro de facture: ${facture.numeroFacture}`);
-      doc.text(`Date d'émission: ${facture.dateEmission}`);
-      doc.text(`Date d'échéance: ${facture.dateEcheance}`);
-      doc.moveDown();
+      // Informations société
+      doc.fontSize(10).text('Mon Auxiliaire SARL', 50, 150);
+      doc.text('123 rue des Entreprises');
+      doc.text('75000 Paris');
+      doc.text('Tél: 01 23 45 67 89');
+      doc.text('Email: contact@mon-auxiliaire.fr');
 
       // Informations client
-      doc.fontSize(14).text('Client:', { underline: true });
-      doc.fontSize(12);
-      doc.text(site.nomSite);
-      doc.text(site.adresse);
-      doc.text(`${site.ville}`);
-      doc.text(`Contact: ${site.contactNom}`);
-      doc.moveDown();
+      doc.fontSize(10).text(site.nomSite, 300, 150, { align: 'right' });
+      doc.text(site.adresse, { align: 'right' });
+      doc.text(site.ville, { align: 'right' });
+      doc.text(`Contact: ${site.contactNom}`, { align: 'right' });
+
+      // Informations facture
+      doc.fontSize(10).text(`Numéro de facture: ${facture.numeroFacture}`, 50, 250);
+      doc.text(`Date d'émission: ${facture.dateEmission}`);
+      doc.text(`Date d'échéance: ${facture.dateEcheance}`);
+
+      // Ligne de séparation
+      doc.moveTo(50, 300).lineTo(550, 300).stroke();
+
+      // En-tête tableau
+      doc.fontSize(10).text('Description', 50, 320);
+      doc.text('Montant HT', 450, 320);
 
       // Détails prestation
-      doc.fontSize(14).text('Détails de la prestation:', { underline: true });
-      doc.fontSize(12);
-      doc.text(`Date: ${prestation.datePrestation}`);
-      doc.text(`Horaires: ${prestation.heureDebut} - ${prestation.heureFin}`);
-      doc.text(`Nombre de manutentionnaires: ${prestation.nbManutentionnaires}`);
-      doc.text(`Nombre de camions: ${prestation.nbCamions}`);
-      doc.moveDown();
+      doc.text(`Prestation du ${prestation.datePrestation}`, 50, 350);
+      doc.text(`${prestation.heureDebut} - ${prestation.heureFin}`, 50, 365);
+      doc.text(`${prestation.nbManutentionnaires} manutentionnaires`, 50, 380);
+      doc.text(`${prestation.nbCamions} camions`, 50, 395);
 
       // Montants
-      doc.fontSize(14).text('Montants:', { underline: true });
-      doc.fontSize(12);
-      doc.text(`Montant HT: ${facture.montantHt} €`);
-      doc.text(`TVA: ${facture.tva} €`);
-      doc.fontSize(14).text(`Montant TTC: ${facture.montantTtc} €`, { bold: true });
+      doc.text(`${facture.montantHt} €`, 450, 350);
+
+      // Ligne de séparation
+      doc.moveTo(50, 450).lineTo(550, 450).stroke();
+
+      // Total
+      doc.text('Total HT', 350, 470);
+      doc.text(`${facture.montantHt} €`, 450, 470);
+      doc.text('TVA (20%)', 350, 490);
+      doc.text(`${facture.tva} €`, 450, 490);
+      doc.text('Total TTC', 350, 510);
+      doc.text(`${facture.montantTtc} €`, 450, 510, { bold: true });
+
+      // Pied de page
+      doc.fontSize(8).text('Mon Auxiliaire SARL - SIRET: 123 456 789 00010 - TVA: FR12345678900', 50, 700, { align: 'center' });
 
       doc.end();
     } catch (error) {
