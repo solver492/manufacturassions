@@ -12,6 +12,7 @@ import {
   insertFactureSchema
 } from "@shared/schema";
 import { z } from "zod";
+import { syncStatutPrestationPaiement } from "@shared/schema";
 
 const JWT_SECRET = process.env.JWT_SECRET || "mon-auxiliaire-secret-key";
 

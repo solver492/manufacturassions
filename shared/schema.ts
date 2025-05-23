@@ -89,6 +89,26 @@ export const factures = pgTable("factures", {
   fichierPdf: varchar("fichier_pdf", { length: 255 })
 });
 
+export function syncStatutPrestationPaiement(statutPrestation: string, statutPaiement: string) {
+  if (statutPrestation === "annule") {
+    return { newStatutPrestation: "annule", newStatutPaiement: "annule" };
+  }
+
+  if (statutPaiement === "paye") {
+    return { newStatutPrestation: "termine", newStatutPaiement: "paye" };
+  }
+
+  if (statutPaiement === "retard") {
+    return { newStatutPrestation: "termine", newStatutPaiement: "retard" };
+  }
+
+  if (statutPrestation === "termine") {
+    return { newStatutPrestation: "termine", newStatutPaiement: "en_attente" };
+  }
+
+  return { newStatutPrestation: statutPrestation, newStatutPaiement: "en_attente" };
+}
+
 // Create Zod schemas for insertions
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true });
 export const insertSiteSchema = createInsertSchema(sites).omit({ id: true, createdAt: true });
