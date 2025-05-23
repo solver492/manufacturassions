@@ -1,0 +1,327 @@
+# Application de Gestion "Mon Auxiliaire Déménagement"
+
+## Vue d'ensemble du projet
+Créer une application web complète de gestion d'entreprise de déménagement permettant la planification, le suivi et la facturation des prestations avec une interface moderne et intuitive.
+
+## Architecture technique recommandée
+
+### Frontend
+- **React.js** avec TypeScript pour une interface robuste
+- **Tailwind CSS** pour le design responsive
+- **FullCalendar** pour la visualisation calendaire
+- **Chart.js** ou **Recharts** pour les graphiques du dashboard
+- **React Router** pour la navigation
+- **Axios** pour les requêtes API
+
+### Backend
+- **Node.js** avec **Express.js**
+- **SQLite** avec **Prisma ORM** pour la gestion de base de données
+- **JWT** pour l'authentification
+- **Multer** pour la gestion des fichiers
+- **PDFKit** ou **jsPDF** pour génération de factures
+
+### Base de données SQLite - Structure des tables
+
+```sql
+-- Table des utilisateurs
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    email VARCHAR(100),
+    role VARCHAR(20) DEFAULT 'admin',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Table des sites clients
+CREATE TABLE sites (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nom_site VARCHAR(100) NOT NULL,
+    ville VARCHAR(50) NOT NULL,
+    adresse TEXT NOT NULL,
+    contact_nom VARCHAR(100),
+    contact_telephone VARCHAR(20),
+    contact_email VARCHAR(100),
+    tarif_horaire DECIMAL(10,2),
+    notes TEXT,
+    actif BOOLEAN DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Table des prestations/missions
+CREATE TABLE prestations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    site_id INTEGER NOT NULL,
+    date_prestation DATE NOT NULL,
+    heure_debut TIME,
+    heure_fin TIME,
+    nb_manutentionnaires INTEGER NOT NULL,
+    nb_camions INTEGER DEFAULT 0,
+    montant_prevu DECIMAL(10,2),
+    montant_facture DECIMAL(10,2),
+    statut_paiement ENUM('en_attente', 'paye', 'retard') DEFAULT 'en_attente',
+    statut_prestation ENUM('planifie', 'en_cours', 'termine', 'annule') DEFAULT 'planifie',
+    notes TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (site_id) REFERENCES sites(id)
+);
+
+-- Table des employés
+CREATE TABLE employes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nom VARCHAR(50) NOT NULL,
+    prenom VARCHAR(50) NOT NULL,
+    telephone VARCHAR(20),
+    salaire_journalier DECIMAL(8,2),
+    specialite VARCHAR(50),
+    actif BOOLEAN DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Table d'affectation employés-prestations
+CREATE TABLE affectations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    prestation_id INTEGER NOT NULL,
+    employe_id INTEGER NOT NULL,
+    present BOOLEAN DEFAULT 1,
+    heures_travaillees DECIMAL(4,2),
+    FOREIGN KEY (prestation_id) REFERENCES prestations(id),
+    FOREIGN KEY (employe_id) REFERENCES employes(id)
+);
+
+-- Table des véhicules
+CREATE TABLE vehicules (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    immatriculation VARCHAR(20) UNIQUE NOT NULL,
+    type_vehicule VARCHAR(50),
+    capacite VARCHAR(50),
+    statut ENUM('disponible', 'en_mission', 'maintenance') DEFAULT 'disponible',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Table des factures
+CREATE TABLE factures (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    prestation_id INTEGER NOT NULL,
+    numero_facture VARCHAR(50) UNIQUE NOT NULL,
+    date_emission DATE NOT NULL,
+    date_echeance DATE,
+    montant_ht DECIMAL(10,2),
+    tva DECIMAL(10,2),
+    montant_ttc DECIMAL(10,2),
+    statut ENUM('brouillon', 'envoyee', 'payee', 'en_retard') DEFAULT 'brouillon',
+    fichier_pdf VARCHAR(255),
+    FOREIGN KEY (prestation_id) REFERENCES prestations(id)
+);
+```
+
+## Fonctionnalités détaillées
+
+### 1. Système d'authentification
+- **Login sécurisé** avec JWT
+- **Gestion des sessions** avec auto-déconnexion
+- **Récupération de mot de passe** par email
+- **Rôles utilisateurs** (admin, gestionnaire, employé)
+
+### 2. Dashboard principal
+Afficher en temps réel :
+- **KPIs principaux** : CA mensuel, nombre de prestations, taux de paiement
+- **Graphiques de performance** :
+  - Évolution du chiffre d'affaires
+  - Répartition par sites clients
+  - Taux d'occupation des employés
+- **Alertes** : factures en retard, prestations du jour
+- **Météo des paiements** : clients bons/mauvais payeurs
+
+### 3. Gestion des sites clients
+**Formulaire de création/modification** :
+```
+- Nom du site : [Champ texte obligatoire]
+- Ville : [Liste déroulante + saisie libre]
+- Adresse complète : [Zone de texte]
+- Contact principal : [Nom, téléphone, email]
+- Tarif horaire standard : [Numérique avec devise]
+- Notes/Spécificités : [Zone de texte libre]
+- Statut : [Actif/Inactif]
+```
+
+**Liste des sites** avec :
+- Recherche et filtres par ville/statut
+- Historique des prestations par site
+- Statistiques par client (CA, fréquence, paiements)
+
+### 4. Planification des prestations
+**Formulaire de prestation** :
+```
+- Site client : [Liste déroulante liée]
+- Date : [Sélecteur de date]
+- Horaires : [Début - Fin]
+- Nombre de manutentionnaires : [Compteur +/-]
+- Nombre de camions : [Compteur +/-]
+- Affectation employés : [Multi-sélection avec disponibilités]
+- Véhicules assignés : [Multi-sélection selon disponibilité]
+- Montant estimé : [Calcul automatique]
+- Notes spéciales : [Zone de texte]
+```
+
+### 5. Calendrier FullCalendar
+**Vues multiples** :
+- Vue mensuelle avec code couleur par statut
+- Vue hebdomadaire détaillée
+- Vue agenda journalière
+
+**Fonctionnalités** :
+- **Drag & Drop** pour déplacer les prestations
+- **Clic** pour voir détails/modifier
+- **Code couleur** :
+  - Vert : Terminé et payé
+  - Orange : Terminé, paiement en attente
+  - Rouge : En retard de paiement
+  - Bleu : Planifié
+  - Gris : Annulé
+
+### 6. Gestion des employés
+- **Profils employés** avec compétences et disponibilités
+- **Planning individuel** et collectif
+- **Suivi des heures** et calcul automatique des salaires
+- **Notifications** pour conflits de planning
+
+### 7. Système de facturation
+**Génération automatique** :
+- Numérotation séquentielle
+- Calcul TVA automatique
+- Template PDF professionnel
+- Envoi par email automatique
+
+**Suivi des paiements** :
+- Relances automatiques
+- Tableau de bord des impayés
+- Historique des paiements
+
+### 8. Rapports et analytics
+**Rapports prédéfinis** :
+- CA par période/site/employé
+- Performance des équipes
+- Analyse de rentabilité
+- Export Excel/PDF
+
+## Interface utilisateur - Wireframes
+
+### Dashboard
+```
+[Header avec logo + menu + user]
+[Row 1: 4 cartes KPI]
+[Row 2: Graphique CA + Camembert répartition sites]
+[Row 3: Planning du jour + Alertes]
+[Row 4: Top 5 clients + Facturation en attente]
+```
+
+### Calendrier
+```
+[Filtres: Sites, Employés, Statuts]
+[Boutons: +Nouvelle prestation, Vue (Mois/Semaine/Jour)]
+[Calendrier FullCalendar intégré]
+[Panel latéral: Détails de la prestation sélectionnée]
+```
+
+### Gestion sites
+```
+[Barre de recherche + Filtres]
+[Bouton: +Nouveau site]
+[Table responsive avec actions (Voir/Modifier/Désactiver)]
+[Modal de création/édition]
+```
+
+## Spécifications techniques avancées
+
+### Sécurité
+- **Chiffrement** des mots de passe avec bcrypt
+- **Validation** des données côté client et serveur
+- **Protection CSRF** et injection SQL
+- **Sauvegarde** automatique SQLite
+
+### Performance
+- **Pagination** des listes longues
+- **Cache** des requêtes fréquentes
+- **Lazy loading** des composants
+- **Optimisation** des requêtes SQL
+
+### Responsive Design
+- **Mobile First** avec Tailwind CSS
+- **Touch friendly** pour tablettes
+- **PWA** pour utilisation hors ligne
+- **Mode sombre** optionnel
+
+## API Endpoints recommandés
+
+```
+Authentication:
+POST /api/auth/login
+POST /api/auth/logout
+GET /api/auth/profile
+
+Sites:
+GET /api/sites
+POST /api/sites
+PUT /api/sites/:id
+DELETE /api/sites/:id
+GET /api/sites/:id/prestations
+
+Prestations:
+GET /api/prestations
+POST /api/prestations
+PUT /api/prestations/:id
+DELETE /api/prestations/:id
+GET /api/prestations/calendar
+
+Employés:
+GET /api/employes
+POST /api/employes
+PUT /api/employes/:id
+GET /api/employes/:id/planning
+
+Factures:
+GET /api/factures
+POST /api/factures
+GET /api/factures/:id/pdf
+PUT /api/factures/:id/paiement
+
+Dashboard:
+GET /api/dashboard/kpis
+GET /api/dashboard/charts
+GET /api/dashboard/alerts
+```
+
+## Étapes de développement suggérées
+
+### Phase 1 (MVP - 2 semaines)
+1. Setup projet et base de données
+2. Authentification basique
+3. CRUD sites et prestations
+4. Calendrier simple
+5. Dashboard basique
+
+### Phase 2 (Fonctionnalités avancées - 2 semaines)
+1. Gestion employés et affectations
+2. Système de facturation
+3. Rapports et exports
+4. Interface mobile
+
+### Phase 3 (Optimisations - 1 semaine)
+1. Performance et sécurité
+2. Tests et debugging
+3. Documentation utilisateur
+4. Déploiement
+
+## Améliorations suggérées par rapport à votre idée initiale
+
+1. **Gestion des employés** : Ajout d'un module complet pour éviter les conflits de planning
+2. **Facturation automatisée** : Génération et envoi automatique des factures
+3. **Notifications** : Alertes pour paiements en retard, prestations à venir
+4. **Analytiques avancées** : Pour identifier les clients rentables
+5. **Mode hors ligne** : Synchronisation pour utilisation sur le terrain
+6. **API mobile** : Pour une app mobile future
+7. **Intégration comptabilité** : Export vers logiciels comptables
+8. **Géolocalisation** : Optimisation des trajets employés-sites
+
+Cette architecture vous donnera une application professionnelle, évolutive et parfaitement adaptée à votre métier de déménagement.
