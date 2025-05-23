@@ -109,28 +109,40 @@ const Dashboard = () => {
 
   const { data: alerts, isLoading: isLoadingAlerts } = useQuery<Alert[]>({
     queryKey: ["dashboard-alerts", isDemoMode],
+    enabled: !!token,
     queryFn: async () => {
-      const token = localStorage.getItem('token');
       const response = await fetch(`/api/dashboard/alerts?demo=${isDemoMode}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-      if (!response.ok) throw new Error('Erreur de chargement des alertes');
+      if (!response.ok) {
+        if (response.status === 403) {
+          localStorage.removeItem('auth_token');
+          throw new Error('Session expirée');
+        }
+        throw new Error('Erreur de chargement des alertes');
+      }
       return response.json();
     }
   });
 
   const { data: planningDuJour, isLoading: isLoadingPlanning } = useQuery<PlanningItem[]>({
     queryKey: ["dashboard-planning", isDemoMode],
+    enabled: !!token,
     queryFn: async () => {
-      const token = localStorage.getItem('token');
       const response = await fetch(`/api/dashboard/planning-jour?demo=${isDemoMode}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-      if (!response.ok) throw new Error('Erreur de chargement du planning');
+      if (!response.ok) {
+        if (response.status === 403) {
+          localStorage.removeItem('auth_token');
+          throw new Error('Session expirée');
+        }
+        throw new Error('Erreur de chargement du planning');
+      }
       return response.json();
     }
   });
